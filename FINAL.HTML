@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title> : A.R.C.H.E.R : GLOBAL OVERWATCH v2.0</title>
+<style>
+:root{
+    --red:#ff004c; --blue:#00aaff; --purple:#8a2be2; --bg:#020105; --green:#00ff41; 
+    --dim-purple: rgba(138, 43, 226, 0.2);
+}
+
+body, html { margin:0; padding:0; height:100vh; background:var(--bg); color:var(--blue); font-family: 'Courier New', monospace; overflow: hidden; text-transform: uppercase; }
+
+/* ================= VISUAL UPGRADES (GLOW & SCANLINES) ================= */
+body { text-shadow: 0 0 2px rgba(0, 170, 255, 0.5); }
+.danger-btn { text-shadow: 0 0 3px var(--red); }
+.success-text { text-shadow: 0 0 3px var(--green); }
+
+body::after { 
+    content: " "; position: fixed; inset: 0; 
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), radial-gradient(circle, transparent 60%, black 150%); 
+    z-index: 10000; pointer-events: none; background-size: 100% 3px, 100% 100%; 
+}
+
+/* ================= LOGIN SCREEN ================= */
+#login { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: 1.5s cubic-bezier(0.7, 0, 0.3, 1); }
+.login-box { border: 1px solid var(--purple); padding: 50px; width: 420px; background: rgba(0, 0, 0, 0.9); box-shadow: 0 0 70px var(--purple); text-align: center; position: relative; }
+.login-box input { width: 100%; margin-bottom: 20px; background: black; border: 1px solid var(--purple); color: var(--blue); padding: 15px; font-family: inherit; outline: none; box-sizing: border-box; }
+.login-box button { width: 100%; background: var(--purple); border: none; color: white; padding: 15px; cursor: pointer; font-weight: bold; letter-spacing: 5px; transition: 0.3s; }
+.login-box button:hover { background: var(--red); box-shadow: 0 0 20px var(--red); }
+
+/* ================= APP LAYOUT ================= */
+#app { display: none; height: 100vh; flex-direction: column; opacity: 0; transition: opacity 2s; }
+
+#top-bar { height: 35px; border-bottom: 1px solid var(--purple); display: flex; align-items: center; font-size: 10px; background: rgba(138, 43, 226, 0.05); overflow: hidden; position: relative; }
+.ticker { white-space: nowrap; animation: scroll 50s linear infinite; color: var(--red); }
+@keyframes scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+
+.mute-toggle { position: absolute; right: 10px; cursor: pointer; color: var(--green); z-index: 100; border: 1px solid var(--green); padding: 2px 8px; }
+
+.container { flex: 1; display: flex; overflow: hidden; position: relative; }
+
+/* SIDEBARS */
+.side { width: 320px; border-right: 1px solid var(--purple); display: flex; flex-direction: column; background: rgba(5,0,15,0.85); z-index: 10; }
+.side-right { border-left: 1px solid var(--purple); border-right: none; width: 350px; padding: 10px; overflow-y: auto; }
+
+.contact-list { flex: 1; overflow-y: auto; }
+.contact { padding: 18px; border-bottom: 1px solid #1a0033; font-size: 11px; cursor: pointer; transition: 0.3s; }
+.contact:hover { background: var(--dim-purple); padding-left: 25px; }
+.contact.active { border-left: 5px solid var(--red); background: rgba(255, 0, 76, 0.1); color: var(--red); }
+
+/* CENTER: THE GRID */
+.center { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.map-overlay { position: absolute; inset: 0; z-index: 1; opacity: 0.4; pointer-events: none; }
+.chat-box { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; background: rgba(0,0,0,0.6); z-index: 2; position: relative; }
+
+/* AI TERMINAL */
+#ai-terminal {
+    position: absolute; bottom: 20px; right: 20px; width: 340px; height: 480px;
+    background: rgba(2, 2, 10, 0.98); border: 1px solid var(--blue);
+    display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0, 170, 255, 0.3); z-index: 500;
+    transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#ai-terminal.minimized { height: 38px; overflow: hidden; }
+.ai-header { background: var(--blue); color: black; padding: 10px; font-size: 11px; font-weight: bold; display: flex; justify-content: space-between; cursor: move; }
+#ai-content { flex: 1; padding: 15px; font-size: 11px; overflow-y: auto; color: var(--green); line-height: 1.6; }
+#ai-input-area { border-top: 1px solid var(--blue); }
+#ai-query { width: 100%; background: transparent; border: none; color: var(--blue); padding: 15px; font-family: inherit; outline: none; box-sizing: border-box; }
+
+/* MESSAGES */
+.m { margin-bottom: 18px; font-size: 13px; max-width: 80%; line-height: 1.6; position: relative; word-wrap: break-word; }
+.them { align-self: flex-start; color: var(--blue); border-left: 1px solid var(--blue); padding-left: 15px; }
+.me { align-self: flex-end; color: var(--red); text-align: right; border-right: 1px solid var(--red); padding-right: 15px; }
+.break { color: var(--purple); text-align: center; font-size: 10px; margin: 30px 0; opacity: 0.7; letter-spacing: 5px; font-weight: bold; }
+/* Typewriter Cursor */
+.cursor::after { content: '█'; animation: blink 1s infinite; color: var(--green); margin-left: 2px; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* TOOLS GRID */
+.tool-cat { font-size: 10px; color: var(--purple); margin: 20px 0 10px 0; border-bottom: 1px solid #333; padding-bottom: 3px; letter-spacing: 2px; }
+.tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tool-btn { border: 1px solid var(--purple); padding: 12px; font-size: 9px; text-align: center; cursor: pointer; background: rgba(0,0,0,0.5); transition: 0.2s; }
+.tool-btn:hover { background: var(--blue); color: black; border-color: white; transform: translateY(-2px); box-shadow: 0 0 10px var(--blue); }
+.danger-btn { border-color: var(--red); color: var(--red); }
+.danger-btn:hover { background: var(--red); color: white; }
+
+/* BOTTOM TERMINAL */
+.bottom-terminal { height: 200px; background: #000; border-top: 2px solid var(--purple); display: flex; flex-direction: column; z-index: 1000; }
+#log { flex: 1; padding: 15px; font-size: 12px; overflow-y: auto; color: var(--green); font-weight: bold; font-family: 'Consolas', monospace; }
+#cmd-line { display: flex; border-top: 1px solid #222; background: #050505; }
+#cmd-input { flex: 1; background: transparent; border: none; padding: 15px; color: var(--blue); font-family: inherit; outline: none; }
+
+/* GLITCH EFFECTS */
+@keyframes shake { 0% { transform: translate(0); } 20% { transform: translate(-5px, 5px); } 40% { transform: translate(-5px, -5px); } 60% { transform: translate(5px, 5px); } 80% { transform: translate(5px, -5px); } 100% { transform: translate(0); } }
+.glitching { animation: shake 0.2s infinite; }
+
+/* ================= RESPONSIVE MOBILE FIX ================= */
+@media (max-width: 850px) {
+    .container { flex-direction: column; }
+    .side, .side-right { width: 100%; height: auto; max-height: 25vh; border-right: none; border-bottom: 1px solid var(--purple); }
+    .center { height: 40vh; }
+    #ai-terminal { width: 90%; right: 5%; bottom: 10px; height: 300px; }
+    .login-box { width: 90%; padding: 20px; }
+    #contacts { display: flex; overflow-x: auto; height: 60px; border-bottom: 1px solid var(--purple); }
+    .contact { white-space: nowrap; padding: 15px; border-bottom: none; border-right: 1px solid #333; }
+    .bottom-terminal { height: 150px; }
+}
+</style>
+</head>
+<body>
+
+<div id="login">
+    <canvas id="login-matrix" style="position:absolute; inset:0; opacity:0.2;"></canvas>
+    <div class="login-box">
+        <h1 style="color:var(--red); letter-spacing: 15px; margin:0; filter: drop-shadow(0 0 10px var(--red));">A.R.C.H.E.R</h1>
+        <p style="font-size: 10px; color: var(--purple); margin-bottom: 30px; letter-spacing: 3px;">NEURAL_LINK_PROTOCOL_v2.0</p>
+        <input id="u" placeholder="NODE_IDENTIFIER" autocomplete="off">
+        <input id="p" type="password" placeholder="SIG_ENCRYPTION_KEY">
+        <button onclick="boot()">BYPASS FIREWALL</button>
+        <div id="boot-status" style="margin-top:20px; font-size:9px; height:15px;"></div>
+    </div>
+</div>
+
+<div id="app">
+    <div id="top-bar">
+        <div class="mute-toggle" onclick="toggleMute()" id="mute-btn">[AUDIO: ON]</div>
+        <div class="ticker">
+            >>> [CRITICAL] DATABASE BREACH IN SECTOR 7 ... >>> [TRACE] UNKNOWN UPLINK IN BUCHAREST ... >>> [OP] PROJECT 'BLACK-SUN' PHASE 2 INITIATED ... >>> [SIGNAL] TW1L1GHT SIGNAL GHOSTED ... >>> [ALERT] QUANTUM DECRYPTION SUCCESSFUL ... >>> [WARN] PACKET LOSS DETECTED IN LONDON ...
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="side">
+            <div style="padding:20px; font-size:10px; border-bottom:1px solid var(--purple); background:rgba(0,0,0,0.5);">
+                OPERATOR: <span id="op-id" style="color:var(--red); font-weight:bold;">---</span><br>
+                UPLINK: <span id="sig">99%</span> | CPU: <span id="cpu">12%</span><br>
+                LATENCY: <span id="ping">14ms</span>
+            </div>
+            <div class="contact-list" id="contacts"></div>
+            <div id="code-stream" style="height:150px; font-size:8px; padding:10px; overflow:hidden; color:var(--purple); background:rgba(0,0,0,0.8);"></div>
+        </div>
+
+        <div class="center">
+            <canvas id="world-map" class="map-overlay"></canvas>
+            <div class="chat-box" id="chat">
+                <div style="margin:auto; opacity:0.3; text-align:center; letter-spacing:10px;">AWAITING HANDSHAKE</div>
+            </div>
+            
+            <div id="ai-terminal">
+                <div class="ai-header" id="ai-header">
+                    <span>ARCHER_COGNITIVE_CORE</span>
+                    <div style="cursor:pointer;" onclick="toggleAI()">[_]</div>
+                </div>
+                <div id="ai-content">
+                    <div class="ai-msg">AI_CORE: Ready. Feed me a protocol or a target.</div>
+                </div>
+                <div id="ai-input-area">
+                    <input id="ai-query" placeholder="QUERY_NEURAL_MESH...">
+                </div>
+            </div>
+        </div>
+
+        <div class="side side-right">
+            <div style="font-size: 11px; color: var(--red); margin-bottom: 10px; font-weight:bold;">TACTICAL COMMAND CONSOLE</div>
+            
+            <div class="tool-cat">NETWORK EXPLOITS</div>
+            <div class="tool-grid">
+                <div class="tool-btn" onclick="tLog('SCANNING RANGE 1-65535...')">PORT_SCAN</div>
+                <div class="tool-btn" onclick="tLog('INJECTING VOID_PACKETS...')">GHOST_INJECT</div>
+                <div class="tool-btn" onclick="tLog('MITM RELAY ACTIVE...')">MITM_SNIFF</div>
+                <div class="tool-btn" onclick="tLog('ARP POISONING INITIATED...')">ARP_POISON</div>
+            </div>
+
+            <div class="tool-cat">CRYPTO_WARFARE</div>
+            <div class="tool-grid">
+                <div class="tool-btn" onclick="tLog('CRACKING AES-256...')">AES_FORCE</div>
+                <div class="tool-btn" onclick="tLog('RSA KEY COLLISION...')">RSA_GEN</div>
+                <div class="tool-btn" onclick="tLog('HASH_SALT_ENTROPY...')">SALT_CRACK</div>
+                <div class="tool-btn" onclick="tLog('DECODING BINARY STREAM...')">BIN_DECODE</div>
+            </div>
+
+            <div class="tool-cat">SIGNAL INTELLIGENCE</div>
+            <div class="tool-grid">
+                <div class="tool-btn" onclick="tLog('GPS_LOCK: 51.5074, -0.1278')">GPS_TRACE</div>
+                <div class="tool-btn" onclick="tLog('CELL_TOWER_HIJACK...')">IMSI_GRAB</div>
+                <div class="tool-btn" onclick="tLog('SAT_LINK_INTERCEPT...')">SAT_LINK</div>
+                <div class="tool-btn" onclick="tLog('RF_SPECTRUM_SCAN...')">RF_SCAN</div>
+            </div>
+
+            <div class="tool-cat">SYSTEM OVERRIDE</div>
+            <div class="tool-grid">
+                <div class="tool-btn" onclick="tLog('SQL_INJECTION_STRIKE...')">SQL_MAP</div>
+                <div class="tool-btn" onclick="tLog('BUFFER_OVERFLOW_INIT...')">STACK_SMASH</div>
+                <div class="tool-btn" onclick="tLog('KERNEL_ROOT_EXPLOIT...')">ROOT_SHELL</div>
+                <div class="tool-btn" onclick="tLog('0-DAY_SCANNER_LOADED...')">ZERO_DAY</div>
+            </div>
+
+            <div class="tool-cat">SECURITY</div>
+            <div class="tool-grid">
+                <div class="tool-btn danger-btn" onclick="location.reload()">WIPE_CORE</div>
+                <div class="tool-btn danger-btn" onclick="selfDestruct()">PURGE_ALL</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-terminal">
+        <div id="log"></div>
+        <div id="cmd-line">
+            <div style="padding:15px; color:var(--purple);">ROOT@ARCHER:~#</div>
+            <input id="cmd-input" placeholder="ENTER COMMAND (Try 'help')..." autocomplete="off">
+        </div>
+    </div>
+</div>
+
+<script>
+/* ================= AUDIO ENGINE ================= */
+const audio = new (window.AudioContext || window.webkitAudioContext)();
+let isMuted = false;
+
+function toggleMute() {
+    isMuted = !isMuted;
+    const btn = document.getElementById('mute-btn');
+    btn.textContent = isMuted ? "[AUDIO: OFF]" : "[AUDIO: ON]";
+    btn.style.color = isMuted ? "var(--red)" : "var(--green)";
+    btn.style.borderColor = isMuted ? "var(--red)" : "var(--green)";
+}
+
+function beep(f, d, t='square') { 
+    if(isMuted) return;
+    if(audio.state === 'suspended') audio.resume();
+    const o = audio.createOscillator(); const g = audio.createGain(); 
+    o.type = t; o.frequency.value = f; g.gain.setValueAtTime(0.015, audio.currentTime); 
+    o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime + d); 
+}
+
+/* ================= CHAT DATABASE & TYPEWRITER ================= */
+const contacts = {
+    "TW1L1GHT": [
+        "The crepuscular syzygy of the nodes is nearing completion.", "Twilight, enough poetry. Is the bank server open?", 
+        "As open as an eleemosynary soul. The quiddity of the vault is mine.", "Did you drop the logs?", 
+        "Logs are but shadows in the cave of history. I have vanished.", "Excellent. Meet at the rendezvous point.", 
+        "[SIGNAL JITTER - RE-ENCRYPTING]",
+        "Back. The woods are quiet tonight. I heard a wolf.", "Focus. We need the root password.", 
+        "p4ss_H4SH_9921_ALPH. It was hidden in a sub-routine.", "Got it. You staying in that cabin?", 
+        "The isolation suits my pogonotrophy. I see the bits clearly now.", "You're losing your mind.", 
+        "Perhaps. But I am the only one awake in this digital dawn.", "[CONNECTION LOST - RECONNECTING...]",
+        "The snow is falling. It covers my tracks. The payload is sent.", "I see it. OMEGA_STANZAS.EXE received.", "Adieu, Solstice."
+    ],
+    "J0VE": [
+        "SOLSTICE, you still breathing?", "Barely. Watching the mesh.", "Traffic spiked again.", 
+        "Patterned or random?", "Too clean to be random.", "I’ll reroute.", "Already did.", 
+        "[SIGNAL DROPPED - RE-ROUTING VIA BUCHAREST]",
+        "Back. My radiator is shot. Coding in a winter coat.", "Fix it. I need you focused.", 
+        "Coffee is cold too. SCADA system is running on ancient firmware.", "Can you exploit the overflow?", 
+        "Give me 20 minutes. Need to stabilize the payload.", "Wait for my signal.", 
+        "Bucharest goes dark at 0200. Noroc.", "Stay sharp, Jove."
+    ],
+    "CRYPT0N": [
+        "Zdrasti. The FSB is knocking on my neighbor's door.", "Is it for you?", 
+        "No, but it is time to move to the dacha.", "Did you finish the dump?", 
+        "Yes. 4 million records. Every Bitcoin transaction in Russia.", "Price?", 
+        "3 BTC and a clean passport for my cousin.", "Deal. Send the file.", 
+        "[ENCRYPTED HANDSHAKE - SUCCESS]",
+        "Sending now. 88%... 95%... Done. Spasibo.", "Safe travels, Crypton.", 
+        "If I am not dead, we talk in 48 hours. Do svidaniya."
+    ],
+    "NULLBYTE": [
+        "Oi! The bloody London Underground just glitched.", "That wasn't me, Null.", 
+        "I know. Sloppy copycats. I shunted my exit through a pub in Soho.", "Classy.", 
+        "[SIGNAL STABLE - LONDON_RELAY]",
+        "SMS gateway is open like a barn door. Reading 2FA codes now.", "Anything interesting?", 
+        "Politicians cheating. Proper rubbish. Forwarding codes to you.", "Received. Legend.", 
+        "Off for a pint now. Cheers, mate!"
+    ]
+};
+
+/* APP CORE */
+function boot() {
+    beep(400, 0.1);
+    const u = document.getElementById('u').value || "SOLSTICE";
+    document.getElementById('op-id').textContent = u.toUpperCase();
+    const stat = document.getElementById('boot-status');
+    let p = 0;
+    const iv = setInterval(() => {
+        p += 5; stat.textContent = "UPLINKING... " + p + "%";
+        if(p >= 100) { clearInterval(iv); start(); }
+    }, 40);
+}
+
+function start() {
+    document.getElementById('login').style.transform = "translateY(-100vh)";
+    document.getElementById('app').style.display = 'flex';
+    setTimeout(() => document.getElementById('app').style.opacity = '1', 100);
+    renderContacts();
+    tLog("A.R.C.H.E.R v2.0 KERNEL LOADED.");
+    tLog("TYPE 'help' IN THE CONSOLE BELOW FOR COMMANDS.");
+    initWorldMap();
+    initCodeStream();
+}
+
+function renderContacts() {
+    const list = document.getElementById('contacts');
+    Object.keys(contacts).forEach(name => {
+        const d = document.createElement('div');
+        d.className = 'contact';
+        d.innerHTML = `[SECURE] ${name} <span style="float:right; color:var(--purple); font-size:8px;">ONLINE</span>`;
+        d.onclick = () => loadChat(name, d);
+        list.appendChild(d);
+    });
+}
+
+// Improved LoadChat with Typewriter Effect
+let typingTimeout;
+function loadChat(name, el) {
+    beep(600, 0.05);
+    clearTimeout(typingTimeout); // Stop previous typing
+    document.querySelectorAll('.contact').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    const box = document.getElementById('chat'); 
+    box.innerHTML = "";
+    
+    let msgQueue = contacts[name];
+    let msgIndex = 0;
+
+    function processNextMessage() {
+        if (msgIndex >= msgQueue.length) return;
+        
+        let t = msgQueue[msgIndex];
+        let d = document.createElement("div");
+        box.appendChild(d);
+
+        // Styling
+        if(t.startsWith("[")) { d.className = "break"; d.textContent = t; next(); }
+        else {
+            let prefix = (msgIndex % 2 ? "YOU: " : name + ": ");
+            d.className = "m " + (msgIndex % 2 ? "me" : "them") + " cursor";
+            typeText(d, prefix + t, 0, () => {
+                d.classList.remove("cursor");
+                next();
+            });
+        }
+
+        function next() {
+            msgIndex++;
+            box.scrollTop = box.scrollHeight;
+            typingTimeout = setTimeout(processNextMessage, 1000); // Wait before next message
+        }
+    }
+    processNextMessage();
+}
+
+function typeText(element, text, i, callback) {
+    if (i < text.length) {
+        element.textContent += text.charAt(i);
+        // Random typing speed variation
+        let speed = Math.random() * 30 + 10; 
+        setTimeout(() => typeText(element, text, i + 1, callback), speed);
+    } else {
+        if (callback) callback();
+    }
+}
+
+function tLog(msg, type='info') {
+    const d = document.createElement('div'); 
+    d.innerHTML = `> <span style="color:${type==='error'?'var(--red)':'var(--green)'}">${msg}</span>`;
+    const l = document.getElementById('log'); l.appendChild(d); l.scrollTop = l.scrollHeight;
+    beep(300, 0.02);
+    document.body.classList.add('glitching');
+    setTimeout(() => document.body.classList.remove('glitching'), 200);
+}
+
+function selfDestruct() {
+    document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:20%; letter-spacing:20px;'>SESSION PURGED.</h1>";
+    beep(200, 2, 'sawtooth');
+}
+
+/* ================= FUNCTIONAL CLI ================= */
+document.getElementById('cmd-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        const cmd = this.value.trim().toLowerCase();
+        this.value = '';
+        if(!cmd) return;
+        
+        tLog("COMMAND: " + cmd);
+        
+        switch(cmd) {
+            case 'help':
+                tLog("AVAILABLE COMMANDS: SCAN, CLEAR, DATE, WHOAMI, EXIT, MATRIX");
+                break;
+            case 'clear':
+                document.getElementById('log').innerHTML = '';
+                tLog("CONSOLE CLEARED.");
+                break;
+            case 'date':
+                tLog(new Date().toUTCString());
+                break;
+            case 'whoami':
+                tLog("USER: " + document.getElementById('op-id').textContent);
+                tLog("PRIVILEGE: ROOT");
+                break;
+            case 'scan':
+                tLog("INITIATING DEEP NET SCAN...");
+                setTimeout(()=>tLog("FOUND 3 VULNERABILITIES IN LOCAL MESH."), 1000);
+                break;
+            case 'matrix':
+                tLog("FOLLOW THE WHITE RABBIT.");
+                break;
+            case 'exit':
+                tLog("LOGOUT SEQUENCE INITIATED...");
+                setTimeout(()=>location.reload(), 1500);
+                break;
+            default:
+                tLog("ERROR: UNKNOWN COMMAND syntax error.", 'error');
+        }
+    }
+});
+
+/* ================= AI TERMINAL & VISUALS ================= */
+const aiResponses = {
+    "status": "Core integrity: 99.4%. Neural mesh: STABLE. Active threats: 0.",
+    "who are you": "I am ARCHER-CORE v2. An advanced cognitive engine.",
+    "trace": "Target signal bouncing via Tokyo, Berlin, and Rio. Pinpointing...",
+    "decrypt": "Injecting entropy. AES-256 breach estimated: 34 minutes.",
+    "default": "Command not found in neural database. Specify parameters."
+};
+
+document.getElementById('ai-query').addEventListener('keydown', e => {
+    if(e.key === 'Enter') {
+        const val = e.target.value.toLowerCase();
+        const box = document.getElementById('ai-content');
+        box.innerHTML += `<div style="color:var(--red);">> ${val}</div>`;
+        setTimeout(() => {
+            box.innerHTML += `<div style="color:var(--green);">AI: ${aiResponses[val] || aiResponses.default}</div>`;
+            box.scrollTop = box.scrollHeight; beep(800, 0.05);
+        }, 600);
+        e.target.value = "";
+    }
+});
+
+function toggleAI() { document.getElementById('ai-terminal').classList.toggle('minimized'); beep(500, 0.05); }
+
+dragElement(document.getElementById("ai-terminal"));
+function dragElement(elmnt) {
+    let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
+    document.getElementById("ai-header").onmousedown = (e) => {
+        e.preventDefault(); p3 = e.clientX; p4 = e.clientY;
+        document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+        document.onmousemove = (e) => {
+            p1 = p3 - e.clientX; p2 = p4 - e.clientY; p3 = e.clientX; p4 = e.clientY;
+            elmnt.style.top = (elmnt.offsetTop - p2) + "px"; elmnt.style.left = (elmnt.offsetLeft - p1) + "px";
+            elmnt.style.bottom = "auto"; elmnt.style.right = "auto";
+        };
+    };
+}
+
+function initWorldMap() {
+    const c = document.getElementById('world-map'); const ctx = c.getContext('2d');
+    c.width = c.offsetWidth; c.height = c.offsetHeight;
+    function draw() {
+        ctx.clearRect(0,0,c.width,c.height);
+        ctx.strokeStyle = "rgba(0,170,255,0.1)";
+        // Draw Curves
+        for(let i=0; i<5; i++) {
+            ctx.beginPath(); ctx.moveTo(Math.random()*c.width, Math.random()*c.height);
+            ctx.quadraticCurveTo(c.width/2, c.height/2, Math.random()*c.width, Math.random()*c.height);
+            ctx.stroke();
+        }
+        // Draw Active Pings
+        ctx.fillStyle = "rgba(255, 0, 76, 0.5)";
+        for(let j=0; j<3; j++) {
+            ctx.beginPath();
+            ctx.arc(Math.random()*c.width, Math.random()*c.height, 2, 0, Math.PI*2);
+            ctx.fill();
+        }
+        setTimeout(draw, 200);
+    }
+    draw();
+}
+
+function initCodeStream() {
+    const stream = document.getElementById('code-stream');
+    setInterval(() => {
+        const code = (Math.random().toString(16) + " " + Math.random().toString(16)).toUpperCase();
+        stream.innerHTML = code + "<br>" + stream.innerHTML;
+        if(stream.children.length > 20) stream.removeChild(stream.lastChild);
+    }, 100);
+}
+
+// Matrix background
+const lCan = document.getElementById('login-matrix'); const lCtx = lCan.getContext('2d');
+lCan.width = window.innerWidth; lCan.height = window.innerHeight;
+function matrix() {
+    lCtx.fillStyle = "rgba(0,0,0,0.05)"; lCtx.fillRect(0,0,lCan.width,lCan.height);
+    lCtx.fillStyle = "#8a2be2"; lCtx.font = "15px monospace";
+    for(let i=0; i<20; i++) lCtx.fillText(Math.random().toString(2), Math.random()*lCan.width, Math.random()*lCan.height);
+    requestAnimationFrame(matrix);
+}
+matrix();
+
+setInterval(() => {
+    document.getElementById('cpu').textContent = Math.floor(Math.random()*20 + 5) + "%";
+    document.getElementById('ping').textContent = Math.floor(Math.random()*15 + 10) + "ms";
+}, 3000);
+</script>
+</body>
+</html>
