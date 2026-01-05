@@ -218,17 +218,44 @@ function beep(f, d, t='square') {
 
 /* ================= BOOT SEQUENCE ================= */
 function boot() {
-    beep(400, 0.1);
-    const u = document.getElementById('u').value || "OPERATOR";
-    document.getElementById('op-name').textContent = u;
+    // 1. Get the values typed by the user
+    const user = document.getElementById('u').value;
+    const pass = document.getElementById('p').value;
     const stat = document.getElementById('boot-status');
-    let p = 0;
-    const iv = setInterval(() => {
-        p += 2; 
-        stat.style.width = p + "%"; 
-        stat.style.backgroundColor = p > 80 ? "var(--green)" : "var(--red)";
-        if(p >= 100) { clearInterval(iv); startSystem(); }
-    }, 30);
+
+    // 2. Check if they match your specific credentials
+    if (user === "Solstice" && pass === "091107") {
+        
+        // --- SUCCESS SEQUENCE ---
+        beep(400, 0.1); // Success beep
+        document.getElementById('op-name').textContent = user.toUpperCase(); // Set name on HUD
+        
+        // Start the loading bar animation
+        let p = 0;
+        const iv = setInterval(() => {
+            p += 2; 
+            stat.textContent = "DECRYPTING... " + p + "%";
+            stat.style.width = p + "%"; 
+            stat.style.backgroundColor = p > 80 ? "var(--green)" : "var(--red)";
+            if(p >= 100) { clearInterval(iv); startSystem(); }
+        }, 30);
+
+    } else {
+        
+        // --- FAILURE SEQUENCE ---
+        beep(150, 0.4, 'sawtooth'); // Low error buzz
+        stat.style.width = "100%";
+        stat.style.backgroundColor = "var(--red)";
+        stat.textContent = "ACCESS DENIED // INVALID KEY";
+        stat.style.color = "black";
+        stat.style.fontWeight = "bold";
+
+        // Reset the error message after 1.5 seconds
+        setTimeout(() => {
+            stat.style.width = "0%";
+            stat.textContent = "";
+        }, 1500);
+    }
 }
 
 function startSystem() {
@@ -549,3 +576,4 @@ matrixBG();
 </script>
 </body>
 </html>
+
